@@ -17,22 +17,26 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Generate debug keystore
-        run: keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+      - name: Decode release keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
 
-      - name: Build Debug APK
-        run: gradle assembleDebug
+      - name: Build Release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle assembleRelease
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/qrcode-scanner-siddhartha.apk
+        run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/qrcode-scanner-siddhartha.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: qrcode-scanner-siddhartha
-          path: app/build/outputs/apk/debug/qrcode-scanner-siddhartha.apk
+          path: app/build/outputs/apk/release/qrcode-scanner-siddhartha.apk
